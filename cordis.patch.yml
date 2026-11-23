@@ -1,0 +1,17 @@
+# dsh-session-title-rules —— 宿主行
+#
+# insert 段由 bundle 自带，装到 profile 后自动生效，不需要手改 profile 的 patch。
+# config 是**启动默认值**：用户在设置页改的值写入 ~/.dsh/dsh-session-title-rules.json，优先级更高。
+- insert:
+    - id: dsh-session-title-rules
+      name: 'dsh-session-title-rules'
+      config:
+        # 总开关。注意：enabled=false 不让插件整体不加载（那会让设置页也打不开），
+        # 只拒绝工具与页面的改名请求，历史与记录照常可读。
+        enabled: true
+        # 标题字节上限；宿主 session-title 行配的是 80，插件不允许超过它。
+        maxBytes: 80
+        # 历史里是否显示官方自动生成的标题（provider / fallback）
+        showProviderTitles: true
+        # 是否向模型注入「怎么用 session_title」的恒定规范（走 systemPrompt.context）
+        injectGuidance: true

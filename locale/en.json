@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session title",
+    "description": "Gives the agent a session_title tool so it can name the conversation itself. The settings page is a single page: current title, switches, model prompts and one line of stats."
+  }
+}

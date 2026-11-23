@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "会话标题",
+    "description": "给 Agent 一个 session_title 工具，让它自己决定会话标题；设置页是单页：当前标题、开关、模型提示词与一行统计。"
+  }
+}
