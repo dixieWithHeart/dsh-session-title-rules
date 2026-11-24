@@ -453,7 +453,9 @@ async function main () {
     check('设置页是单页（无页签）',
       !clientText.includes('TABS') && !clientText.includes('tabBar') && !clientText.includes('StatsCard'))
     check('统计内联为一行',
-      clientText.includes('statGrid') && clientText.includes("T('statEvents')"))
+      clientText.includes('h(Inline, { gap:') && clientText.includes("T('statEvents')"))
+    check('页面使用共享骨架（Page / Card）',
+      clientText.includes('return h(Page,') && clientText.includes('h(Card, {'))
     check('设置项常驻（不在页签里）',
       clientText.includes('panelSettingsRow') && clientText.includes('panelPrompt'))
     check('提示词可编辑且能恢复默认',

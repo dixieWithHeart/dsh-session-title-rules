@@ -215,7 +215,7 @@ window.__ModuleLoader__.load({
     }
 
     // ═══ 5. 样式（只用主题 token，全部带 fallback）══════════════════════
-    // @ui-kit v1.3.0  共享 UI 基座（源：plugins/_shared/ui-kit.js；改源后重新复制本段）
+    // @ui-kit v1.4.3  共享 UI 基座（源：plugins/_shared/ui-kit.js；改源后重新复制本段）
     // ═════════════════════════════ [C] 颜色 token ═════════════════════════
     const C = {
       border: 'var(--dsw-alias-border-subtle, rgba(130,130,140,0.28))',
@@ -304,6 +304,42 @@ window.__ModuleLoader__.load({
       sliderValue: { fontSize: '13px', fontWeight: 600, fontFamily: C.mono },
     }
 
+    // ═════════════════════════ [P] 页面骨架样式 ═════════════════════════
+    // 页面骨架（Page / Card / Section / Footer）用 P，不并入插件的 S。
+    // 插件无法通过覆盖 S 改变页面层级，六个插件的设置页因此保持同构。
+    const P = {
+      page: { display: 'grid', gap: '14px', color: C.text },
+      head: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
+      title: { fontSize: '16px', fontWeight: 600, margin: 0, lineHeight: 1.3 },
+      meta: { fontSize: '12px', color: C.dim },
+      headRight: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' },
+      badge: { fontSize: '12px', color: C.dim, border: '1px solid ' + C.border, borderRadius: '999px', padding: '1px 8px' },
+      card: {
+        border: '1px solid ' + C.border, borderRadius: C.radius, padding: '16px 18px',
+        display: 'grid', gap: '12px',
+      },
+      cardHead: { display: 'grid', gap: '3px' },
+      cardTitleRow: { display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' },
+      cardTitle: { fontSize: '15px', fontWeight: 600, margin: 0 },
+      cardAction: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+      cardDesc: { margin: 0, fontSize: '12px', lineHeight: 1.6, color: C.dim },
+      section: { borderTop: '1px solid ' + C.border, paddingTop: '10px', display: 'grid', gap: '10px' },
+      sectionHead: {
+        display: 'flex', alignItems: 'baseline', gap: '8px', width: '100%',
+        background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+        color: C.text, textAlign: 'left',
+      },
+      sectionTitle: { fontSize: '13px', fontWeight: 600 },
+      sectionHint: { fontSize: '12px', color: C.dim, flex: '1 1 auto', minWidth: 0 },
+      sectionChevron: { fontSize: '12px', color: C.dim, flex: 'none' },
+      sectionBody: { display: 'grid', gap: '10px' },
+      footer: { fontSize: '12px', color: C.dim, lineHeight: 1.6, margin: 0 },
+      ok: { fontSize: '12px', color: C.ok },
+      bad: { fontSize: '12px', color: C.danger },
+      note: { fontSize: '12px', color: C.dim },
+      empty: { fontSize: '12.5px', color: C.dim, fontStyle: 'italic' },
+    }
+
     // ═════════════════════════ [组件] 通用控件 ═════════════════════════
     /** 开关按钮。 */
     function Toggle ({ on, label, onChange }) {
@@ -327,6 +363,43 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /** 一行文本：有值显示内容，无值显示占位说明。 */
+    function Line ({ text, placeholder }) {
+      return text
+        ? h('div', { style: S.line }, text)
+        : h('div', { style: S.empty }, placeholder)
+    }
+
+    /** 标签 + 值（值默认等宽）。 */
+    function Field ({ label, value, mono }) {
+      return h('div', { style: S.field },
+        h('span', { style: S.label }, label),
+        h('span', { style: mono === false ? { fontSize: '12.5px' } : { fontFamily: C.mono, fontSize: '12.5px' } }, value),
+      )
+    }
+
+    /** 百分比滑条。valueText 传当前值的可读形式（如 "30%"），不传则只显示标签。 */
+    function Slider ({ label, value, min, max, step, hint, valueText, disabled, onChange }) {
+      return h('div', { style: S.field },
+        h('div', { style: S.sliderHead },
+          h('span', { style: S.rowTitle }, label),
+          valueText ? h('span', { style: S.sliderValue }, valueText) : null,
+        ),
+        h('input', {
+          type: 'range',
+          min,
+          max,
+          step,
+          value: Number(value) || 0,
+          style: S.range,
+          'aria-label': label,
+          disabled,
+          onChange: (e) => onChange(Number(e.target.value)),
+        }),
+        hint ? h('span', { style: S.hint }, hint) : null,
+      )
+    }
+
     /** 数据卡片：一个数值 + 一句说明。 */
     function Stat ({ value, label }) {
       return h('div', { style: S.statItem },
@@ -335,26 +408,101 @@ window.__ModuleLoader__.load({
       )
     }
 
-    // 模板优先：通用键全部来自 S_BASE，这里只放本插件特有的结构样式。
+    /** 设置页骨架：页头（标题 / 版本 / 自定义徽章 / 状态 / 开关）+ 可选说明 + 内容 + 脚注。 */
+    function Page ({ title, version, badge, status, toggle, desc, children, footer }) {
+      return h('div', { style: P.page },
+        h('div', { style: P.head },
+          h('h3', { style: P.title }, title),
+          version ? h('span', { style: P.badge }, 'v' + version) : null,
+          badge ? h('span', { style: P.badge }, badge) : null,
+          h('div', { style: P.headRight },
+            status ? h('span', { style: P.meta }, status) : null,
+            toggle || null,
+          ),
+        ),
+        desc ? h('p', { style: P.meta }, desc) : null,
+        children,
+        footer ? h('p', { style: P.footer }, footer) : null,
+      )
+    }
+
+    /** 内容卡片：标题 + 可选说明 + 标题行右侧操作 + 内容。 */
+    function Card ({ title, desc, status, action, children }) {
+      return h('section', { style: P.card },
+        (title || desc || status || action) ? h('div', { style: P.cardHead },
+          (title || status || action) ? h('div', { style: P.cardTitleRow },
+            title ? h('h4', { style: P.cardTitle }, title) : null,
+            status ? h('span', { style: P.meta }, status) : null,
+            action ? h('span', { style: P.cardAction }, action) : null,
+          ) : null,
+          desc ? h('p', { style: P.cardDesc }, desc) : null,
+        ) : null,
+        children,
+      )
+    }
+
+    /** 可折叠分组：标题行 + 折叠内容（收起时保留 DOM，只用 display 隐藏）。 */
+    function Section ({ title, hint, open, onToggle, children }) {
+      return h('section', { style: P.section },
+        h('button', {
+          type: 'button',
+          style: P.sectionHead,
+          'aria-expanded': open ? 'true' : 'false',
+          onClick: onToggle,
+        },
+          h('span', { style: P.sectionTitle }, title),
+          hint ? h('span', { style: P.sectionHint }, hint) : null,
+          h('span', { style: P.sectionChevron }, open ? '▾' : '▸'),
+        ),
+        h('div', { style: open ? P.sectionBody : { ...P.sectionBody, display: 'none' } }, children),
+      )
+    }
+
+    /** 纵向堆叠。 */
+    function Stack ({ gap, children }) {
+      return h('div', { style: { display: 'grid', gap: gap || '10px' } }, children)
+    }
+
+    /** 横向排列，空间不足时换行。 */
+    function Inline ({ gap, children }) {
+      return h('div', { style: { display: 'flex', alignItems: 'center', gap: gap || '8px', flexWrap: 'wrap' } }, children)
+    }
+
+    /** 保存状态行：saving / saved / error；text 为空时不渲染。 */
+    function StatusLine ({ state, text }) {
+      if (!text) return null
+      const style = state === 'error' ? P.bad : state === 'saved' ? P.ok : P.note
+      return h('div', { style, role: state === 'error' ? 'alert' : 'status' }, text)
+    }
+
+    /** 脚注：存储路径、数据来源等。 */
+    function Footer ({ children }) {
+      return h('p', { style: P.footer }, children)
+    }
+
+    /** 互斥选项组（药丸按钮）。options 为 `[[value, label], ...]`。 */
+    function ChipGroup ({ value, options, disabled, onChange }) {
+      return h('div', { style: S.chips },
+        options.map(([key, label]) => h('button', {
+          key,
+          type: 'button',
+          style: S.chip(value === key),
+          'aria-pressed': value === key ? 'true' : 'false',
+          disabled,
+          onClick: () => onChange(key, label),
+        }, label))
+      )
+    }
     const S = {
       ...S_BASE,
-      // 头部总开关
-      headToggle: { display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '14px' },
+      // 页头开关的文案
       headToggleLabel: { fontSize: '12px', color: C.dim },
       // 当前标题
-      currentPanel: {
-        display: 'grid', gap: '6px', padding: '12px 14px',
-        border: '1px solid ' + C.border, borderRadius: C.radiusSm, background: C.surface,
-      },
       currentRow: { display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' },
       currentTitle: { fontSize: '15px', fontWeight: 600, lineHeight: 1.5, wordBreak: 'break-word' },
       dim: { fontSize: '12px', color: C.dim },
       badgeAgent: { fontSize: '12px', color: C.accent, border: '1px solid ' + C.accent, borderRadius: '999px', padding: '1px 8px' },
-      // 提示词面板与统计行
-      linkBtn: {
-        marginLeft: 'auto', fontSize: '12px', border: 'none', background: 'transparent',
-        color: C.accent, cursor: 'pointer', padding: 0,
-      },
+      // 提示词折叠区
       pre: {
         fontFamily: C.mono, fontSize: '11.5px', lineHeight: 1.65, whiteSpace: 'pre-wrap',
         margin: 0, color: C.dim, maxHeight: '220px', overflow: 'auto',
@@ -363,8 +511,6 @@ window.__ModuleLoader__.load({
         padding: '2px 10px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer',
         border: '1px solid ' + C.border, background: 'transparent', color: C.text,
       },
-      // 统计（一行三个数字）
-      statGrid: { display: 'flex', gap: '18px', flexWrap: 'wrap' },
     }
 
     // ═══ 6. 设置页（slot: settings.section）═════════════════════════════
@@ -389,6 +535,21 @@ window.__ModuleLoader__.load({
       return h('span', { style: label === 'agent' ? S.badgeAgent : S.badge }, sourceText(label))
     }
 
+    /** 设置页导航图标：标题框（跟随主题色）。 */
+    function SettingsIcon ({ size }) {
+      const px = Number(size) || 18
+      return h('svg', {
+        width: px, height: px, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': 'true',
+      },
+        h('rect', { x: 3, y: 5, width: 18, height: 14, rx: 2.5 }),
+        h('path', { d: 'M7 12h6.5' }),
+        h('path', { d: 'M11 9.5 13.5 12 11 14.5' }),
+        h('circle', { cx: 17, cy: 12, r: 1, fill: 'currentColor', stroke: 'none' }),
+      )
+    }
+
     function SettingsCard () {
       const s = useStore()
       const [busy, setBusy] = useState(false)
@@ -398,7 +559,6 @@ window.__ModuleLoader__.load({
       // 提示词草稿：null = 未编辑，显示服务端值；编辑后失焦保存，成功后回到 null
       const [toolDraft, setToolDraft] = useState(null)
       const [guidanceDraft, setGuidanceDraft] = useState(null)
-      const [promptOpen, setPromptOpen] = useState(false)
 
       const msgTimer = useRef(null)
       const flash = (text, bad) => {
@@ -446,8 +606,7 @@ window.__ModuleLoader__.load({
       useEffect(() => { setGuidanceDraft(null) }, [p.uiLocale])
 
       // 常驻设置行：显示自动标题、字节上限、注入开关
-      const panelSettingsRow = h('div', { style: S.panel },
-        h('div', { style: S.head }, h('div', { style: S.label }, T('settingsTitle'))),
+      const panelSettingsRow = [
         h(Row, {
           title: T('showProviderTitle'),
           desc: T('showProviderDesc'),
@@ -493,7 +652,7 @@ window.__ModuleLoader__.load({
             onChange: (v) => apply({ injectGuidance: v }, T('saved')),
           }),
         }),
-      )
+      ]
 
       // 模型提示词：工具描述 + 当前界面语言的注入规范；失焦保存，可恢复默认
       const promptLocaleField = p.uiLocale === 'en' ? 'guidanceEn' : 'guidanceZh'
@@ -525,21 +684,11 @@ window.__ModuleLoader__.load({
         })
       }
 
-      const panelPrompt = h('div', { style: S.panel },
-        h('div', { style: S.head },
-          h('div', { style: S.label }, T('promptTitle')),
-          hasCustomPrompt ? h('span', { style: S.badge }, T('customized')) : null,
-          h('button', {
-            type: 'button',
-            style: S.linkBtn,
-            'aria-expanded': promptOpen ? 'true' : 'false',
-            'aria-controls': 'dsh-session-title-prompts',
-            onClick: () => setPromptOpen(!promptOpen),
-          }, promptOpen ? T('collapse') : T('expand')),
-        ),
-        h('p', { style: S.desc }, T('promptDesc')),
-        promptOpen
-          ? h('div', { style: S.field, id: 'dsh-session-title-prompts' },
+      const panelPrompt = h(Card, {
+        title: T('promptTitle'),
+        desc: T('promptDesc'),
+        status: hasCustomPrompt ? T('customized') : null,
+        children: h('div', { style: S.field, id: 'dsh-session-title-prompts' },
             h('div', { style: S.field },
               h('span', { style: S.rowTitle }, T('toolDescLabel')),
               h('span', { style: S.hint }, T('toolDescHint')),
@@ -574,56 +723,50 @@ window.__ModuleLoader__.load({
             h('div', { style: S.inline },
               h('button', { type: 'button', style: S.actionBtn, onClick: resetPrompts }, T('resetDefault')),
             ),
-          )
-          : null,
-      )
-
-      return h('div', { style: S.card },
-        h('div', { style: S.head },
-          h('h3', { style: S.title }, T('heading')),
-          s.version ? h('span', { style: S.badge }, 'v' + s.version) : null,
-          h('div', { style: S.headToggle },
-            h('span', { style: S.headToggleLabel }, s.settings.enabled ? T('on') : T('off')),
-            h(Toggle, {
-              on: Boolean(s.settings.enabled),
-              label: T('enablePlugin'),
-              onChange: (v) => apply({ enabled: v }, v ? T('saved') : T('off')),
-            }),
-          ),
         ),
+      })
 
-        busy ? h('div', { style: S.hint, role: 'status' }, T('saving')) : null,
-        msg ? h('div', { style: S.msg(msg.bad), role: msg.bad ? 'alert' : 'status' }, msg.text) : null,
-
-        h('div', { style: S.currentPanel },
-          h('div', { style: S.head },
-            h('div', { style: S.label }, T('currentTitle')),
-            h('span', { style: S.status }, statusText),
-          ),
-          current
-            ? h('div', { style: S.currentRow },
-              h(SourceBadge, { label: current.label }),
-              h('span', { style: S.currentTitle }, current.title),
-              h('span', { style: S.dim }, T('bytes', { n: byteLength(current.title), max: maxBytes })),
-            )
-            : h('div', { style: S.empty }, p.hasSession ? T('noTitle') : T('noSessionPanel')),
+      return h(Page, {
+        title: T('heading'),
+        version: s.version,
+        status: statusText,
+        toggle: h(Inline, { gap: '6px' },
+          h('span', { style: S.headToggleLabel }, s.settings.enabled ? T('on') : T('off')),
+          h(Toggle, {
+            on: Boolean(s.settings.enabled),
+            label: T('enablePlugin'),
+            onChange: (v) => apply({ enabled: v }, v ? T('saved') : T('off')),
+          }),
         ),
+        footer: T('foot', { path: p.settingsPath || '~/.dsh/dsh-session-title-rules.json' }),
+        children: [
+          busy ? h(StatusLine, { state: 'saving', text: T('saving') }) : null,
+          msg ? h(StatusLine, { state: msg.bad ? 'error' : 'saved', text: msg.text }) : null,
 
-        panelSettingsRow,
-        panelPrompt,
+          h(Card, {
+            title: T('currentTitle'),
+            children: current
+              ? h('div', { style: S.currentRow },
+                h(SourceBadge, { label: current.label }),
+                h('span', { style: S.currentTitle }, current.title),
+                h('span', { style: S.dim }, T('bytes', { n: byteLength(current.title), max: maxBytes })),
+              )
+              : h('div', { style: P.empty }, p.hasSession ? T('noTitle') : T('noSessionPanel')),
+          }),
 
-        // 轻量统计：一行三个数字，带小标题，避免裸数字
-        h('div', { style: S.field },
-          h('div', { style: S.label }, T('statsTitle')),
-          h('div', { style: S.statGrid },
-            h(Stat, { value: String(stats.total), label: T('statEvents') }),
-            h(Stat, { value: String(stats.changes), label: T('statChanges') }),
-            h(Stat, { value: String(stats.avgBytes) + ' B', label: T('statAvg') }),
-          ),
-        ),
+          h(Card, { title: T('settingsTitle'), children: panelSettingsRow }),
+          panelPrompt,
 
-        h('p', { style: S.foot }, T('foot', { path: p.settingsPath || '~/.dsh/dsh-session-title-rules.json' })),
-      )
+          h(Card, {
+            title: T('statsTitle'),
+            children: h(Inline, { gap: '18px' },
+              h(Stat, { value: String(stats.total), label: T('statEvents') }),
+              h(Stat, { value: String(stats.changes), label: T('statChanges') }),
+              h(Stat, { value: String(stats.avgBytes) + ' B', label: T('statAvg') }),
+            ),
+          }),
+        ],
+      })
     }
 
 // ═══ 7. 注册 ═══════════════════════════════════════════════════════
@@ -701,6 +844,17 @@ window.__ModuleLoader__.load({
           'settings.section',
         ),
         'dsh-session-title-rules-settings-section',
+      )
+
+      ctx.effect(
+        () => contribute(
+          ctx,
+          'settings.section.icon',
+          { name: 'settings.section.icon', id: 'dsh-session-title-rules' },
+          SettingsIcon,
+          'settings.section.icon',
+        ),
+        'dsh-session-title-rules-settings-icon',
       )
     }
 

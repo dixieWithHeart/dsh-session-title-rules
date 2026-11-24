@@ -5,7 +5,7 @@
  * 放在一起改一处即可，避免在多个文件里各写一份而漂移。
  */
 
-export const VERSION = '0.5.1'
+export const VERSION = '0.6.0'
 
 /** 投影单元 key。改它等于放弃历史 cell，需同步 projection.js 的 stateVersion。 */
 export const PROJECTION_KEY = 'titleAudit'
